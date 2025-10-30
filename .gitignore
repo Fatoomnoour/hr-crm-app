@@ -1,0 +1,6 @@
+echo "__pycache__/" > .gitignore
+echo "*.pyc" >> .gitignore
+echo "instance/" >> .gitignore
+echo ".env" >> .gitignore
+echo "employees.db" >> .gitignore
+echo "*.db" >> .gitignore

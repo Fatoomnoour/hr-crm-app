@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="welcome-card">
+        <h2>مرحباً بك في نظام الموارد البشرية!</h2>
+        <p>هذا النظام يتيح لك إدارة بيانات الموظفين بسهولة</p>
+        <div class="features">
+            <div class="feature">
+                <h3>➕ إضافة موظفين</h3>
+                <p>أضف موظفين جدد بسهولة</p>
+            </div>
+            <div class="feature">
+                <h3>👀 عرض البيانات</h3>
+                <p>استعرض جميع الموظفين في جدول منظم</p>
+            </div>
+            <div class="feature">
+                <h3>✏️ تعديل البيانات</h3>
+                <p>عدّل بيانات الموظفين عند الحاجة</p>
+            </div>
+            <div class="feature">
+                <h3>🗑️ حذف السجلات</h3>
+                <p>احذف الموظفين الذين لم يعودوا يعملون</p>
+            </div>
+        </div>
+        <a href="{{ url_for('employees') }}" class="cta-button">ابدأ الآن</a>
+    </div>
+{% endblock %}

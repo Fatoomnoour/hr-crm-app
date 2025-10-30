@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+        <h2>تعديل بيانات الموظف</h2>
+        
+        <div class="form-container">
+            <form method="POST">
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <input type="text" name="name" value="{{ employee.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" name="email" value="{{ employee.email }}" required>
+                </div>
+                <div class="form-group">
+                    <label>القسم</label>
+                    <select name="department" required>
+                        <option value="">اختر القسم</option>
+                        <option value="تقنية المعلومات" {% if employee.department == 'تقنية المعلومات' %}selected{% endif %}>تقنية المعلومات</option>
+                        <option value="الموارد البشرية" {% if employee.department == 'الموارد البشرية' %}selected{% endif %}>الموارد البشرية</option>
+                        <option value="المالية" {% if employee.department == 'المالية' %}selected{% endif %}>المالية</option>
+                        <option value="التسويق" {% if employee.department == 'التسويق' %}selected{% endif %}>التسويق</option>
+                        <option value="المبيعات" {% if employee.department == 'المبيعات' %}selected{% endif %}>المبيعات</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>المسمى الوظيفي</label>
+                    <input type="text" name="job_title" value="{{ employee.job_title }}" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                    <a href="{{ url_for('employees') }}" class="btn btn-secondary">إلغاء</a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
