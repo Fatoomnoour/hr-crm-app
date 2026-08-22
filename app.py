@@ -1,9 +1,11 @@
+import os
+
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///employees.db'
-app.config['SECRET_KEY'] = 'your_secret_key_here'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'local-development-only-change-me')
 
 db = SQLAlchemy(app)
 
@@ -78,4 +80,4 @@ def filter_employees():
     return render_template('employees.html', employees=filtered_employees)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=os.getenv('FLASK_DEBUG', '0') == '1')
