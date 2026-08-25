@@ -4,3 +4,8 @@ echo "instance/" >> .gitignore
 echo ".env" >> .gitignore
 echo "employees.db" >> .gitignore
 echo "*.db" >> .gitignore
+# Python artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/

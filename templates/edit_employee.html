@@ -5,6 +5,7 @@
         
         <div class="form-container">
             <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
                 <div class="form-group">
                     <label>الاسم الكامل</label>
                     <input type="text" name="name" value="{{ employee.name }}" required>
