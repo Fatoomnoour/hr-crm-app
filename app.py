@@ -1,15 +1,21 @@
 import os
+import secrets
+from functools import wraps
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, abort, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///employees.db'
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'local-development-only-change-me')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///employees.db')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024
+if not app.config['SECRET_KEY'] and os.getenv('FLASK_ENV') == 'production':
+    raise RuntimeError('SECRET_KEY must be configured in production')
+if not app.config['SECRET_KEY']:
+    app.config['SECRET_KEY'] = 'local-development-only-change-me'
 
 db = SQLAlchemy(app)
 
-# نموذج الموظف
 class Employee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -17,67 +23,72 @@ class Employee(db.Model):
     department = db.Column(db.String(50), nullable=False)
     job_title = db.Column(db.String(100), nullable=False)
 
-# إنشاء قاعدة البيانات
 with app.app_context():
     db.create_all()
 
-# الصفحة الرئيسية
+@app.context_processor
+def inject_csrf_token():
+    token = session.setdefault('_csrf_token', secrets.token_urlsafe(32))
+    return {'csrf_token': token}
+
+@app.before_request
+def protect_state_changing_requests():
+    if request.method in {'POST', 'PUT', 'PATCH', 'DELETE'}:
+        expected = session.get('_csrf_token')
+        supplied = request.form.get('_csrf_token') or request.headers.get('X-CSRF-Token')
+        if not expected or not supplied or not secrets.compare_digest(expected, supplied):
+            abort(400, description='Invalid CSRF token')
+
+def clean_form():
+    fields = {}
+    for field, limit in [('name', 100), ('email', 100), ('department', 50), ('job_title', 100)]:
+        value = request.form.get(field, '').strip()
+        if not value or len(value) > limit:
+            abort(400, description=f'Invalid {field}')
+        fields[field] = value
+    if '@' not in fields['email'] or '.' not in fields['email'].rsplit('@', 1)[-1]:
+        abort(400, description='Invalid email')
+    return fields
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# عرض جميع الموظفين
 @app.route('/employees')
 def employees():
-    all_employees = Employee.query.all()
-    return render_template('employees.html', employees=all_employees)
+    return render_template('employees.html', employees=Employee.query.all())
 
-# إضافة موظف جديد
 @app.route('/add', methods=['POST'])
 def add_employee():
-    name = request.form['name']
-    email = request.form['email']
-    department = request.form['department']
-    job_title = request.form['job_title']
-    
-    new_employee = Employee(name=name, email=email, department=department, job_title=job_title)
-    db.session.add(new_employee)
+    employee = Employee(**clean_form())
+    db.session.add(employee)
     db.session.commit()
-    
-    return redirect('/employees')
+    return redirect(url_for('employees'))
 
-# تعديل موظف
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit_employee(id):
     employee = Employee.query.get_or_404(id)
-    
     if request.method == 'POST':
-        employee.name = request.form['name']
-        employee.email = request.form['email']
-        employee.department = request.form['department']
-        employee.job_title = request.form['job_title']
+        for key, value in clean_form().items():
+            setattr(employee, key, value)
         db.session.commit()
-        return redirect('/employees')
-    
+        return redirect(url_for('employees'))
     return render_template('edit_employee.html', employee=employee)
 
-# حذف موظف
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete_employee(id):
     employee = Employee.query.get_or_404(id)
     db.session.delete(employee)
     db.session.commit()
-    return redirect('/employees')
+    return redirect(url_for('employees'))
 
-# تصفية الموظفين حسب القسم
 @app.route('/filter', methods=['POST'])
 def filter_employees():
-    department = request.form['department']
+    department = request.form.get('department', '').strip()
+    query = Employee.query
     if department:
-        filtered_employees = Employee.query.filter_by(department=department).all()
-    else:
-        filtered_employees = Employee.query.all()
-    return render_template('employees.html', employees=filtered_employees)
+        query = query.filter_by(department=department)
+    return render_template('employees.html', employees=query.all())
 
 if __name__ == '__main__':
     app.run(debug=os.getenv('FLASK_DEBUG', '0') == '1')
